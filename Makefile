@@ -1,8 +1,9 @@
-CC=gcc
-SRC=raywordle.c
-LDLIBS=-L/home/lauren/software/raylib/src -lraylib -lm -ldl -lpthread -lGL
-INCLUDE=-I/home/lauren/software/raylib/src
-OUT=raywordle
+CC = gcc
+SRC = raywordle.c
+RAYLIB_PATH ?= /home/lauren/software/raylib
+LDLIBS = -L$(RAYLIB_PATH)/src -lraylib -lm -ldl -lpthread -lGL
+INCLUDE = -I$(RAYLIB_PATH)/src
+OUT = raywordle
 
 default:
 	$(CC) -o $(OUT) $(SRC) $(LDLIBS) $(INCLUDE)
