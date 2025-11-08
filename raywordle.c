@@ -14,7 +14,7 @@
 #define MAX_ATTEMPTS 6
 #define MAX_LETTERS  5
 
-void drawletter(char k, int x, int y, int size, Color inner_color, Color line_color);
+void drawletter(char k, int x, int y, Vector2 size, Color inner_color, Color line_color);
 
 int main()
 {
@@ -31,6 +31,10 @@ int main()
     offsets_x[2] = offsets_x[1] + 75;
 
     char attempts[MAX_ATTEMPTS][MAX_LETTERS] = {0};
+    int attempt = 0;
+    int letter_idx = 0;
+
+    Rectangle delete_button = { 7*(LETTER_ICON_SIZE + SEPARATION) + (offsets_x[2]), (GetScreenHeight() - LETTER_ICON_SIZE*5) + (3*(LETTER_ICON_SIZE + SEPARATION)), LETTER_ICON_SIZE, LETTER_ICON_SIZE };
 
     Rectangle grid_container;
     grid_container.width = GetScreenWidth() - 290;
@@ -46,7 +50,7 @@ int main()
 
         for (int i = 0; i < MAX_LETTERS; ++i)
             for (int j = 0; j < MAX_ATTEMPTS; ++j)
-                drawletter(' ', i*(LETTER_GUESS_SIZE + SEPARATION*3) + grid_container.x + 15, j*(LETTER_GUESS_SIZE + SEPARATION*5) + grid_container.y + 8, LETTER_GUESS_SIZE, GetColor(BG_COLOR), GRAY);
+                drawletter(' ', i*(LETTER_GUESS_SIZE + SEPARATION*3) + grid_container.x + 15, j*(LETTER_GUESS_SIZE + SEPARATION*5) + grid_container.y + 8, (Vector2){LETTER_ICON_SIZE, LETTER_ICON_SIZE}, GetColor(BG_COLOR), GRAY);
 
         int x_offset = 0;
         int y_offset = 0;
@@ -58,10 +62,11 @@ int main()
             }
             else {
                 int y = (GetScreenHeight() - LETTER_ICON_SIZE*5) + ((y_offset + 1)*(LETTER_ICON_SIZE + SEPARATION));
-                drawletter(keyboard[i], x_offset*(LETTER_ICON_SIZE + SEPARATION) + offsets_x[y_offset], y, LETTER_ICON_SIZE, GRAY, WHITE);
+                drawletter(keyboard[i], x_offset*(LETTER_ICON_SIZE + SEPARATION) + offsets_x[y_offset], y, (Vector2){LETTER_ICON_SIZE, LETTER_ICON_SIZE}, GRAY, WHITE);
                 ++x_offset;
             }
         }
+        drawletter('<', delete_button.x, delete_button.y, (Vector2){delete_button.width + 37, delete_button.height}, GRAY, WHITE);
 //        DrawLine(GetScreenWidth()/2, 0, GetScreenWidth()/2, GetScreenHeight(), WHITE);
 
         EndDrawing();
@@ -71,9 +76,9 @@ int main()
     return 0;
 }
 
-void drawletter(char k, int x, int y, int size, Color inner_color, Color line_color)
+void drawletter(char k, int x, int y, Vector2 size, Color inner_color, Color line_color)
 {
-    Rectangle r = {x, y, size, size};
+    Rectangle r = {x, y, size.x, size.y};
 
     const char *text = TextFormat("%c", k);
     Vector2 measure = MeasureTextEx(GetFontDefault(), text, 40.0f, 4);
