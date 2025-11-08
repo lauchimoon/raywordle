@@ -1,5 +1,7 @@
 #include "raylib.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define WIDTH      820
 #define HEIGHT     1000
@@ -14,7 +16,14 @@
 #define MAX_ATTEMPTS 6
 #define MAX_LETTERS  5
 
-void drawletter(char k, int x, int y, Vector2 size, Color inner_color, Color line_color);
+#define NUM_BUTTONS 28
+
+typedef struct Button {
+    Rectangle box;
+    char *text;
+} Button;
+
+void drawbutton(Button b, Color inner_color, Color line_color);
 
 int main()
 {
@@ -34,7 +43,11 @@ int main()
     int attempt = 0;
     int letter_idx = 0;
 
-    Rectangle delete_button = { 7*(LETTER_ICON_SIZE + SEPARATION) + (offsets_x[2]), (GetScreenHeight() - LETTER_ICON_SIZE*5) + (3*(LETTER_ICON_SIZE + SEPARATION)), LETTER_ICON_SIZE, LETTER_ICON_SIZE };
+    Button buttons[NUM_BUTTONS] = { 0 };
+    Button delete_button = {(Rectangle){7*(LETTER_ICON_SIZE + SEPARATION) + (offsets_x[2]), (GetScreenHeight() - LETTER_ICON_SIZE*5) + (3*(LETTER_ICON_SIZE + SEPARATION)), LETTER_ICON_SIZE + 37, LETTER_ICON_SIZE}, "Delete"};
+    Button enter_button = {(Rectangle){offsets_x[0], (GetScreenHeight() - LETTER_ICON_SIZE*5) + (3*(LETTER_ICON_SIZE + SEPARATION)), LETTER_ICON_SIZE + 37, LETTER_ICON_SIZE}, "Enter"};
+    buttons[NUM_BUTTONS - 1] = enter_button;
+    buttons[NUM_BUTTONS - 2] = delete_button;
 
     Rectangle grid_container;
     grid_container.width = GetScreenWidth() - 290;
@@ -49,8 +62,11 @@ int main()
         DrawRectangleLinesEx(grid_container, 2.0f, GRAY);
 
         for (int i = 0; i < MAX_LETTERS; ++i)
-            for (int j = 0; j < MAX_ATTEMPTS; ++j)
-                drawletter(' ', i*(LETTER_GUESS_SIZE + SEPARATION*3) + grid_container.x + 15, j*(LETTER_GUESS_SIZE + SEPARATION*5) + grid_container.y + 8, (Vector2){LETTER_ICON_SIZE, LETTER_ICON_SIZE}, GetColor(BG_COLOR), GRAY);
+            for (int j = 0; j < MAX_ATTEMPTS; ++j) {
+                Rectangle box = {i*(LETTER_GUESS_SIZE + SEPARATION*3) + grid_container.x + 15, j*(LETTER_GUESS_SIZE + SEPARATION*5) + grid_container.y + 8, LETTER_ICON_SIZE, LETTER_ICON_SIZE};
+                DrawRectangleRec(box, GetColor(BG_COLOR));
+                DrawRectangleLinesEx(box, 1.0f, GRAY);
+            }
 
         int x_offset = 0;
         int y_offset = 0;
@@ -61,29 +77,34 @@ int main()
                 x_offset = 0;
             }
             else {
+                int x = x_offset*(LETTER_ICON_SIZE + SEPARATION) + offsets_x[y_offset];
                 int y = (GetScreenHeight() - LETTER_ICON_SIZE*5) + ((y_offset + 1)*(LETTER_ICON_SIZE + SEPARATION));
-                drawletter(keyboard[i], x_offset*(LETTER_ICON_SIZE + SEPARATION) + offsets_x[y_offset], y, (Vector2){LETTER_ICON_SIZE, LETTER_ICON_SIZE}, GRAY, WHITE);
+                char text[2] = { keyboard[i], '\0' };
+                buttons[i - y_offset].box = (Rectangle){ x, y, LETTER_ICON_SIZE, LETTER_ICON_SIZE };
+                buttons[i - y_offset].text = calloc(2, sizeof(char));
+                strncpy(buttons[i - y_offset].text, text, 2);
                 ++x_offset;
             }
         }
-        drawletter('<', delete_button.x, delete_button.y, (Vector2){delete_button.width + 37, delete_button.height}, GRAY, WHITE);
-//        DrawLine(GetScreenWidth()/2, 0, GetScreenWidth()/2, GetScreenHeight(), WHITE);
+
+        for (int i = 0; i < NUM_BUTTONS; ++i)
+            drawbutton(buttons[i], GRAY, WHITE);
 
         EndDrawing();
     }
+
+    for (int i = 0; i < NUM_BUTTONS - 2; ++i)
+        free(buttons[i].text);
 
     CloseWindow();
     return 0;
 }
 
-void drawletter(char k, int x, int y, Vector2 size, Color inner_color, Color line_color)
+void drawbutton(Button b, Color inner_color, Color line_color)
 {
-    Rectangle r = {x, y, size.x, size.y};
-
-    const char *text = TextFormat("%c", k);
-    Vector2 measure = MeasureTextEx(GetFontDefault(), text, 40.0f, 4);
-
-    DrawRectangleRec(r, inner_color);
-    DrawRectangleLinesEx(r, 1.0f, line_color);
-    DrawText(text, x + r.width/2 - measure.x/2, y + r.height/2 - measure.y/2, 40, line_color);
+    int font_size = 30;
+    Vector2 measure = MeasureTextEx(GetFontDefault(), b.text, (float)font_size, 4);
+    DrawRectangleRec(b.box, inner_color);
+    DrawRectangleLinesEx(b.box, 1.0f, line_color);
+    DrawText(b.text, b.box.x + b.box.width/2 - measure.x/2, b.box.y + b.box.height/2 - measure.y/2, font_size, line_color);
 }
