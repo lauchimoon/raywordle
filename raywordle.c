@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define WIDTH      820
 #define HEIGHT     1000
@@ -21,6 +22,7 @@
 typedef struct Button {
     Rectangle box;
     char *text;
+    int key;
 } Button;
 
 void drawbutton(Button b, Color inner_color, Color line_color);
@@ -44,8 +46,8 @@ int main()
     int letter_idx = 0;
 
     Button buttons[NUM_BUTTONS] = { 0 };
-    Button delete_button = {(Rectangle){7*(LETTER_ICON_SIZE + SEPARATION) + (offsets_x[2]), (GetScreenHeight() - LETTER_ICON_SIZE*5) + (3*(LETTER_ICON_SIZE + SEPARATION)), LETTER_ICON_SIZE + 37, LETTER_ICON_SIZE}, "Delete"};
-    Button enter_button = {(Rectangle){offsets_x[0], (GetScreenHeight() - LETTER_ICON_SIZE*5) + (3*(LETTER_ICON_SIZE + SEPARATION)), LETTER_ICON_SIZE + 37, LETTER_ICON_SIZE}, "Enter"};
+    Button delete_button = {(Rectangle){7*(LETTER_ICON_SIZE + SEPARATION) + (offsets_x[2]), (GetScreenHeight() - LETTER_ICON_SIZE*5) + (3*(LETTER_ICON_SIZE + SEPARATION)), LETTER_ICON_SIZE + 37, LETTER_ICON_SIZE}, "Delete", KEY_BACKSPACE};
+    Button enter_button = {(Rectangle){offsets_x[0], (GetScreenHeight() - LETTER_ICON_SIZE*5) + (3*(LETTER_ICON_SIZE + SEPARATION)), LETTER_ICON_SIZE + 37, LETTER_ICON_SIZE}, "Enter", KEY_ENTER};
     buttons[NUM_BUTTONS - 1] = enter_button;
     buttons[NUM_BUTTONS - 2] = delete_button;
 
@@ -56,16 +58,36 @@ int main()
     grid_container.y = 10;
 
     while (!WindowShouldClose()) {
+        for (int i = 0; i < NUM_BUTTONS; ++i)
+            if (CheckCollisionPointRec(GetMousePosition(), buttons[i].box) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                if (isalpha(buttons[i].key) && letter_idx < MAX_LETTERS)
+                    attempts[attempt][letter_idx++] = buttons[i].key;
+                else if (buttons[i].key == KEY_BACKSPACE && letter_idx > 0)
+                    attempts[attempt][--letter_idx] = '\0';
+                else if (buttons[i].key == KEY_ENTER && letter_idx >= MAX_LETTERS && attempt < MAX_ATTEMPTS) {
+                    ++attempt;
+                    letter_idx = 0;
+                }
+            }
+
         BeginDrawing();
         ClearBackground(GetColor(BG_COLOR));
         DrawRectangleRec(grid_container, GetColor(GRID_COLOR));
         DrawRectangleLinesEx(grid_container, 2.0f, GRAY);
 
+        DrawRectangle(grid_container.x, grid_container.y + attempt*grid_container.height/MAX_ATTEMPTS, grid_container.width, grid_container.height/MAX_ATTEMPTS, Fade(GRAY, 0.4f));
+
         for (int i = 0; i < MAX_LETTERS; ++i)
             for (int j = 0; j < MAX_ATTEMPTS; ++j) {
-                Rectangle box = {i*(LETTER_GUESS_SIZE + SEPARATION*3) + grid_container.x + 15, j*(LETTER_GUESS_SIZE + SEPARATION*5) + grid_container.y + 8, LETTER_ICON_SIZE, LETTER_ICON_SIZE};
+                int x = i*(LETTER_GUESS_SIZE + SEPARATION*3) + grid_container.x + 15;
+                int y = j*(LETTER_GUESS_SIZE + SEPARATION*5) + grid_container.y + 8;
+                Rectangle box = {x, y, LETTER_ICON_SIZE, LETTER_ICON_SIZE};
                 DrawRectangleRec(box, GetColor(BG_COLOR));
                 DrawRectangleLinesEx(box, 1.0f, GRAY);
+
+                const char *text = TextFormat("%c", attempts[j][i]);
+                Vector2 measure = MeasureTextEx(GetFontDefault(), text, 40.0f, 4);
+                DrawText(text, x + box.width/2 - measure.x/2, y + box.height/2 - measure.y/2, 40, WHITE);
             }
 
         int x_offset = 0;
@@ -82,6 +104,7 @@ int main()
                 char text[2] = { keyboard[i], '\0' };
                 buttons[i - y_offset].box = (Rectangle){ x, y, LETTER_ICON_SIZE, LETTER_ICON_SIZE };
                 buttons[i - y_offset].text = calloc(2, sizeof(char));
+                buttons[i - y_offset].key = keyboard[i];
                 strncpy(buttons[i - y_offset].text, text, 2);
                 ++x_offset;
             }
